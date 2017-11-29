@@ -31,17 +31,14 @@ export default class App extends React.Component {
     this.onSearchStateChange = this.onSearchStateChange.bind(this);
   }
   displaySuggestions() {
-    console.log('display suggestions');
     this.setState({ displaySuggestions: true });
   }
 
   removeSuggestions() {
-    console.log('remove suggestions');
     this.setState({ displaySuggestions: false });
   }
 
   setQuery(query) {
-    console.log('setQuery');
     this.setState({
       searchState: {
         ...this.state.searchState,
@@ -51,7 +48,6 @@ export default class App extends React.Component {
   }
 
   onSearchStateChange(searchState) {
-    console.log('searchState');
     this.setState({ searchState });
   }
 
@@ -59,7 +55,6 @@ export default class App extends React.Component {
     const suggestions = this.state.displaySuggestions ? (
       <QuerySuggestionsHits onPressItem={this.setQuery} />
     ) : null;
-    console.log(this.state.searchState);
     return (
       <View style={{ marginTop: 20 }}>
         <InstantSearch
@@ -74,17 +69,20 @@ export default class App extends React.Component {
             <Configure hitsPerPage={5} />
             {suggestions}
           </Index>
-          <View
-            style={{
-              backgroundColor: 'lightgrey',
-              height: 40,
-              justifyContent: 'center',
-              padding: 10,
-            }}
-          >
-            <Text>Best results</Text>
-          </View>
-          <ResultsHits removeSuggestions={this.removeSuggestions} />
+          <Index indexName="instant_search">
+            <Configure hitsPerPage={5} />
+            <View
+              style={{
+                backgroundColor: 'lightgrey',
+                height: 40,
+                justifyContent: 'center',
+                padding: 10,
+              }}
+            >
+              <Text>Best results</Text>
+            </View>
+            <ResultsHits removeSuggestions={this.removeSuggestions} />
+          </Index>
         </InstantSearch>
       </View>
     );
@@ -137,7 +135,9 @@ const ResultsHits = connectInfiniteHits(
           <View style={{ flexDirection: 'row', margin: 10 }}>
             <Image
               source={{
-                uri: `https://res.cloudinary.com/hilnmyskv/image/fetch/h_300,q_100,f_auto/${item.image}`,
+                uri: `https://res.cloudinary.com/hilnmyskv/image/fetch/h_300,q_100,f_auto/${
+                  item.image
+                }`,
               }}
               style={{ width: 40, height: 40 }}
             />
@@ -186,6 +186,7 @@ const SuggestionsHits = connectHits(({ hits, onPressItem }) => {
               attributeName="query"
               hit={item}
               highlightProperty="_highlightResult"
+              inverted
             />
           </View>
         </TouchableHighlight>
