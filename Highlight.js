@@ -3,9 +3,9 @@ import { Text } from 'react-native';
 import { connectHighlight } from 'react-instantsearch/connectors';
 
 export default connectHighlight(
-  ({ highlight, attributeName, hit, highlightProperty, inverted }) => {
-    const parsedHit = highlight({ attributeName, hit, highlightProperty });
-    const styles = inverted ? {} : { backgroundColor: '#ffff99' };
+  ({ highlight, attributeName, hit, highlightProperty }) => {
+    const parsedHit = highlight({ attributeName, hit, highlightProperty: '_highlightResult' });
+    const styles = { backgroundColor: '#ffff99' };
     const highligtedHit = parsedHit.map((part, idx) => {
       if (part.isHighlighted)
         return (
@@ -14,7 +14,7 @@ export default connectHighlight(
           </Text>
         );
       return (
-        <Text key={idx} style={{ fontWeight: inverted ? 'bold' : 'normal' }}>
+        <Text key={idx}>
           {part.value}
         </Text>
       );
