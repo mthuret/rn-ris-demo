@@ -8,81 +8,35 @@ import {
   SectionList,
   Image,
   TouchableHighlight,
+  Platform,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { Constants } from 'expo';
 import {
   connectSearchBox,
   connectInfiniteHits,
   connectHits,
   connectAutoComplete,
+  connectStateResults,
 } from 'react-instantsearch/connectors';
 import { InstantSearch, Configure, Index } from 'react-instantsearch/native';
 import Highlight from './Highlight';
+import { omit } from 'lodash';
+const { width, height } = Dimensions.get('window');
+
+
 export default class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      displaySuggestions: false,
-      query: '',
-      searchState: {},
-    };
-    this.displaySuggestions = this.displaySuggestions.bind(this);
-    this.removeSuggestions = this.removeSuggestions.bind(this);
-    this.setQuery = this.setQuery.bind(this);
-    this.onSearchStateChange = this.onSearchStateChange.bind(this);
-  }
-  displaySuggestions() {
-    this.setState({ displaySuggestions: true });
-  }
-
-  removeSuggestions() {
-    this.setState({ displaySuggestions: false });
-  }
-
-  setQuery(query) {
-    this.setState({
-      searchState: {
-        ...this.state.searchState,
-        query,
-      },
-    });
-  }
-
-  onSearchStateChange(searchState) {
-    this.setState({ searchState });
-  }
-
   render() {
-    const suggestions = this.state.displaySuggestions ? (
-      <QuerySuggestionsHits onPressItem={this.setQuery} />
-    ) : null;
     return (
-      <View style={{ marginTop: 20 }}>
+      <View style={styles.container}>
         <InstantSearch
           appId="latency"
           apiKey="6be0576ff61c053d5f9a3225e2a90f76"
           indexName="instant_search"
-          onSearchStateChange={this.onSearchStateChange}
-          searchState={this.state.searchState}
         >
-          <ConnectedSearchBox displaySuggestions={this.displaySuggestions} />
-          <Index indexName="instantsearch_query_suggestions">
-            <Configure hitsPerPage={5} />
-            {suggestions}
-          </Index>
-          <Index indexName="instant_search">
-            <Configure hitsPerPage={5} />
-            <View
-              style={{
-                backgroundColor: 'lightgrey',
-                height: 40,
-                justifyContent: 'center',
-                padding: 10,
-              }}
-            >
-              <Text>Best results</Text>
-            </View>
-            <ResultsHits removeSuggestions={this.removeSuggestions} />
-          </Index>
+          <ConnectedSearchBox />
+          <ResultsInfiniteHits />
         </InstantSearch>
       </View>
     );
@@ -98,33 +52,35 @@ class SearchBox extends Component {
             uri:
               'https://d13yacurqjgara.cloudfront.net/users/1090953/avatars/small/3a0f064859092a0e82bedddcee24a4a8.png?148154278',
           }}
-          style={{ width: 40, height: 40, margin: 10 }}
+          style={styles.algoliaLogo}
         />
         <TextInput
           style={styles.searchBox}
           onChangeText={text => this.props.refine(text)}
           value={this.props.currentRefinement}
           placeholder={'Search a product...'}
-          placeholderTextColor={'white'}
+          placeholderTextColor={'black'}
           clearButtonMode={'always'}
-          underlineColorAndroid={'white'}
           spellCheck={false}
           autoCorrect={false}
           autoCapitalize={'none'}
           onFocus={this.props.displaySuggestions}
         />
-      </View>
+        <View
+          style={styles.spinner}
+        >
+          <ActivityIndicator animating={this.props.isSearchStalled} />
+        </View>
+      </View >
     );
   }
 }
 
 const ConnectedSearchBox = connectSearchBox(SearchBox);
 
-const ResultsHits = connectInfiniteHits(
-  ({ hits, hasMore, refine, removeSuggestions }) => {
-    /* if there are still results, you can
-    call the refine function to load more */
-    const onEndReached = function() {
+const ResultsInfiniteHits = connectInfiniteHits(
+  ({ hits, hasMore, refine, removeSuggestions, query }) => {
+    const onEndReached = function () {
       if (hasMore) {
         refine();
       }
@@ -132,22 +88,17 @@ const ResultsHits = connectInfiniteHits(
     return (
       <FlatList
         renderItem={({ item }) => (
-          <View style={{ flexDirection: 'row', margin: 10 }}>
+          <View style={styles.itemContainer}>
             <Image
               source={{
                 uri: `https://res.cloudinary.com/hilnmyskv/image/fetch/h_300,q_100,f_auto/${
                   item.image
-                }`,
+                  }`,
               }}
-              style={{ width: 40, height: 40 }}
+              style={styles.itemImage}
             />
             <Text
-              style={{
-                alignSelf: 'center',
-                paddingLeft: 5,
-                flex: 1,
-                flexWrap: 'wrap',
-              }}
+              style={styles.itemText}
             >
               <Highlight
                 attributeName="name"
@@ -163,12 +114,7 @@ const ResultsHits = connectInfiniteHits(
         onScroll={removeSuggestions}
         ItemSeparatorComponent={() => (
           <View
-            style={{
-              height: 1,
-              backgroundColor: 'lightgrey',
-              marginTop: 10,
-              marginBottom: 10,
-            }}
+            style={styles.itemSeparator}
           />
         )}
       />
@@ -176,43 +122,42 @@ const ResultsHits = connectInfiniteHits(
   }
 );
 
-const SuggestionsHits = connectHits(({ hits, onPressItem }) => {
-  return (
-    <FlatList
-      renderItem={({ item }) => (
-        <TouchableHighlight onPress={() => onPressItem(item.query)}>
-          <View style={{ height: 30, padding: 10 }}>
-            <Highlight
-              attributeName="query"
-              hit={item}
-              highlightProperty="_highlightResult"
-              inverted
-            />
-          </View>
-        </TouchableHighlight>
-      )}
-      keyExtractor={item => item.objectID}
-      data={hits}
-    />
-  );
-});
-
-const QuerySuggestionsHits = connectHits(SuggestionsHits);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 20,
+    marginTop: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchBoxContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(10, 23, 36, 1)',
+    backgroundColor: 'white',
+    alignItems: 'stretch',
   },
   searchBox: {
-    color: 'white',
+    color: 'black',
     height: 50,
+    width: 300,
     alignSelf: 'center',
   },
+  itemSeparator: {
+    height: 1,
+    backgroundColor: 'lightgrey',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  itemText: {
+    alignSelf: 'center',
+    paddingLeft: 5,
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  itemImage: { width: 40, height: 40 },
+  itemContainer: { flexDirection: 'row', margin: 10 },
+  algoliaLogo: { width: 40, height: 40, margin: 10 },
+  spinner: {
+    position: 'absolute',
+    left: width - 70,
+    bottom: 20,
+  }
 });
