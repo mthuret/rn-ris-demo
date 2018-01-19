@@ -64,7 +64,6 @@ class SearchBox extends Component {
           spellCheck={false}
           autoCorrect={false}
           autoCapitalize={'none'}
-          onFocus={this.props.displaySuggestions}
         />
         <View
           style={styles.spinner}
